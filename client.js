@@ -7,13 +7,18 @@ function getSingleVidReq(vidInfo) {
               <h3>${vidInfo.topic_title}</h3>
               <p class="text-muted mb-2">${vidInfo.topic_details}</p>
               <p class="mb-0 text-muted">
-                <strong>Expected results:</strong> ${vidInfo.expected_result}
+                ${
+                  vidInfo.expected_result &&
+                  `<strong>Expected results:</strong> ${vidInfo.expected_result}`
+                }
               </p>
             </div>
             <div class="d-flex flex-column text-center">
-              <a class="btn btn-link">🔺</a>
-              <h3>${vidInfo.votes["ups"]}</h3>
-              <a class="btn btn-link">🔻</a>
+              <a class="btn btn-link" id="votes_ups_${vidInfo._id}"  >🔺</a>
+              <h3 id="score_vote_${vidInfo._id}">${
+    vidInfo.votes["ups"] - vidInfo.votes["downs"]
+  }</h3>
+              <a class="btn btn-link " id="votes_downs_${vidInfo._id}">🔻</a>
             </div>
           </div>
           <div class="card-footer d-flex flex-row justify-content-between">
@@ -42,6 +47,39 @@ document.addEventListener("DOMContentLoaded", function () {
     .then((data) => {
       data.forEach((vidInfo) => {
         listOfVidsElem.appendChild(getSingleVidReq(vidInfo));
+        const voteUpElem = document.getElementById(`votes_ups_${vidInfo._id}`);
+        const voteDownElem = document.getElementById(
+          `votes_downs_${vidInfo._id}`
+        );
+        const scoreVoteElem = document.getElementById(
+          `score_vote_${vidInfo._id}`
+        );
+
+        voteUpElem.addEventListener("click", (e) => {
+          fetch("http://localhost:7777/video-request/vote", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: vidInfo._id, vote_type: "ups" }),
+          })
+            .then((blob) => blob.json())
+            .then((data) => {
+              console.log(data);
+              scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
+            });
+        });
+
+        voteDownElem.addEventListener("click", (e) => {
+          fetch("http://localhost:7777/video-request/vote", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: vidInfo._id, vote_type: "downs" }),
+          })
+            .then((blob) => blob.json())
+            .then((data) => {
+              console.log(data);
+              scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
+            });
+        });
       });
     });
   formVidReq.addEventListener("submit", (e) => {
@@ -55,7 +93,8 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then((data) => data.json())
       .then((data) => {
-        console.log(data);
+        let newReq = getSingleVidReq(data);
+        listOfVidsElem.prepend(newReq);
       });
   });
 });
