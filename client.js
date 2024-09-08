@@ -1,6 +1,7 @@
-function getSingleVidReq(vidInfo) {
+const listOfVidsElem = document.getElementById("listOfRequests");
+
+function renderSingleVid(vidInfo, isPrepend = false) {
   const vidReqContainer = document.createElement("div");
-  console.log(vidInfo);
   vidReqContainer.innerHTML = `        <div class="card mb-3">
           <div class="card-body d-flex justify-content-between flex-row">
             <div class="d-flex flex-column">
@@ -35,53 +36,71 @@ function getSingleVidReq(vidInfo) {
           </div>
         </div>`;
 
-  return vidReqContainer;
+  if (isPrepend) listOfVidsElem.prepend(vidReqContainer);
+  else listOfVidsElem.appendChild(vidReqContainer);
+
+  const voteUpElem = document.getElementById(`votes_ups_${vidInfo._id}`);
+  const voteDownElem = document.getElementById(`votes_downs_${vidInfo._id}`);
+  const scoreVoteElem = document.getElementById(`score_vote_${vidInfo._id}`);
+
+  voteUpElem.addEventListener("click", (e) => {
+    fetch("http://localhost:7777/video-request/vote", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: vidInfo._id, vote_type: "ups" }),
+    })
+      .then((blob) => blob.json())
+      .then((data) => {
+        scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
+      });
+  });
+
+  voteDownElem.addEventListener("click", (e) => {
+    fetch("http://localhost:7777/video-request/vote", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: vidInfo._id, vote_type: "downs" }),
+    })
+      .then((blob) => blob.json())
+      .then((data) => {
+        console.log(data);
+        scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
+      });
+  });
+}
+
+function loadAllVidReqs(sortBy = "newFirst") {
+  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}`)
+    .then((blob) => blob.json())
+    .then((data) => {
+      listOfVidsElem.innerHTML = "";
+      data.forEach((vidInfo) => {
+        renderSingleVid(vidInfo);
+      });
+    });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
   const formVidReq = document.getElementById("formVideoRequest");
-  const listOfVidsElem = document.getElementById("listOfRequests");
 
-  fetch("http://localhost:7777/video-request")
-    .then((blob) => blob.json())
-    .then((data) => {
-      data.forEach((vidInfo) => {
-        listOfVidsElem.appendChild(getSingleVidReq(vidInfo));
-        const voteUpElem = document.getElementById(`votes_ups_${vidInfo._id}`);
-        const voteDownElem = document.getElementById(
-          `votes_downs_${vidInfo._id}`
-        );
-        const scoreVoteElem = document.getElementById(
-          `score_vote_${vidInfo._id}`
-        );
+  const sortByElems = document.querySelectorAll("[id*=sort_by_]");
 
-        voteUpElem.addEventListener("click", (e) => {
-          fetch("http://localhost:7777/video-request/vote", {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ id: vidInfo._id, vote_type: "ups" }),
-          })
-            .then((blob) => blob.json())
-            .then((data) => {
-              console.log(data);
-              scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
-            });
-        });
+  loadAllVidReqs();
 
-        voteDownElem.addEventListener("click", (e) => {
-          fetch("http://localhost:7777/video-request/vote", {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ id: vidInfo._id, vote_type: "downs" }),
-          })
-            .then((blob) => blob.json())
-            .then((data) => {
-              console.log(data);
-              scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
-            });
-        });
-      });
+  sortByElems.forEach((elem) => {
+    elem.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const sortBy = this.querySelector("input");
+      loadAllVidReqs(sortBy.value);
+
+      this.classList.add("active");
+      if (sortBy.value == "topVotedFirst") {
+        document.getElementById("sort_by_new").classList.remove("active");
+      } else document.getElementById("sort_by_top").classList.remove("active");
     });
+  });
+
   formVidReq.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -93,8 +112,7 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then((data) => data.json())
       .then((data) => {
-        let newReq = getSingleVidReq(data);
-        listOfVidsElem.prepend(newReq);
+        renderSingleVid(data, true);
       });
   });
 });
