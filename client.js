@@ -1,4 +1,6 @@
 const listOfVidsElem = document.getElementById("listOfRequests");
+let sortBy = "newFirst";
+let searchTerm = "";
 
 function renderSingleVid(vidInfo, isPrepend = false) {
   const vidReqContainer = document.createElement("div");
@@ -69,8 +71,10 @@ function renderSingleVid(vidInfo, isPrepend = false) {
   });
 }
 
-function loadAllVidReqs(sortBy = "newFirst") {
-  fetch(`http://localhost:7777/video-request?sortBy=${sortBy}`)
+function loadAllVidReqs(sortBy = "newFirst", searchTerm = "") {
+  fetch(
+    `http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`
+  )
     .then((blob) => blob.json())
     .then((data) => {
       listOfVidsElem.innerHTML = "";
@@ -80,10 +84,20 @@ function loadAllVidReqs(sortBy = "newFirst") {
     });
 }
 
+function debounce(fn, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), wait);
+  };
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   const formVidReq = document.getElementById("formVideoRequest");
 
   const sortByElems = document.querySelectorAll("[id*=sort_by_]");
+
+  const searchBox = document.getElementById("search_box");
 
   loadAllVidReqs();
 
@@ -91,15 +105,23 @@ document.addEventListener("DOMContentLoaded", function () {
     elem.addEventListener("click", function (e) {
       e.preventDefault();
 
-      const sortBy = this.querySelector("input");
-      loadAllVidReqs(sortBy.value);
+      sortBy = this.querySelector("input").value;
+      loadAllVidReqs(sortBy, searchTerm);
 
       this.classList.add("active");
-      if (sortBy.value == "topVotedFirst") {
+      if (sortBy == "topVotedFirst") {
         document.getElementById("sort_by_new").classList.remove("active");
       } else document.getElementById("sort_by_top").classList.remove("active");
     });
   });
+
+  searchBox.addEventListener(
+    "input",
+    debounce((e) => {
+      searchTerm = e.target.value;
+      loadAllVidReqs(sortBy, searchTerm);
+    }, 250)
+  );
 
   formVidReq.addEventListener("submit", (e) => {
     e.preventDefault();
