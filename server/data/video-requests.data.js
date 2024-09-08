@@ -25,6 +25,48 @@ module.exports = {
     }).sort({ addedAt: "-1" });
   },
 
+  addSubscriber: async (userID, id, vote_type) => {
+    try {
+      // Find the video request by id
+      let video = await VideoRequest.findById(id);
+      console.log(video);
+
+      if (!video) {
+        throw new Error("Video request not found");
+      }
+
+      console.log("here", userID);
+      console.log(video.subscribers);
+
+      for (let i = 0; i < video.subscribers.length; i++) {
+        if (
+          video.subscribers[i].userID == userID &&
+          video.subscribers[i].vote_type == vote_type
+        )
+          return;
+      }
+
+      let flag = true;
+
+      for (let i = 0; i < video.subscribers.length; i++) {
+        if (video.subscribers[i].userID == userID) {
+          flag = false;
+          break;
+        }
+      }
+
+      if (flag) video.subscribers.push({ userID, vote_type });
+
+      // Save the updated video request
+      await video.save();
+
+      return video; // Return the updated video request
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  },
+
   getRequestById: (id) => {
     return VideoRequest.findById({ _id: id });
   },

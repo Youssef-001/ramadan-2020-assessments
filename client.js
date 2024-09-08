@@ -49,11 +49,35 @@ function renderSingleVid(vidInfo, isPrepend = false) {
   const voteDownElem = document.getElementById(`votes_downs_${vidInfo._id}`);
   const scoreVoteElem = document.getElementById(`score_vote_${vidInfo._id}`);
 
-  voteUpElem.addEventListener("click", (e) => {
+  voteUpElem.addEventListener("click", async (e) => {
+    let jsonData = await fetch("http://localhost:7777/video-request");
+    let videos = await jsonData.json();
+    let video;
+
+    for (let i = 0; i < videos.length; i++) {
+      if (e.target.id.split("_")[2] == videos[i]._id) {
+        video = videos[i];
+      }
+    }
+    console.log(video);
+    if (video) {
+      for (let i = 0; i < video.subscribers.length; i++) {
+        if (
+          video.subscribers[i].userID == state.userId
+          //&&video.subscribers[i].vote_type == "ups"
+        )
+          return;
+      }
+    }
+
     fetch("http://localhost:7777/video-request/vote", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: vidInfo._id, vote_type: "ups" }),
+      body: JSON.stringify({
+        id: vidInfo._id,
+        vote_type: "ups",
+        userID: state.userId,
+      }),
     })
       .then((blob) => blob.json())
       .then((data) => {
@@ -61,11 +85,35 @@ function renderSingleVid(vidInfo, isPrepend = false) {
       });
   });
 
-  voteDownElem.addEventListener("click", (e) => {
+  voteDownElem.addEventListener("click", async (e) => {
+    let jsonData = await fetch("http://localhost:7777/video-request");
+    let videos = await jsonData.json();
+    let video;
+
+    for (let i = 0; i < videos.length; i++) {
+      if (e.target.id.split("_")[2] == videos[i]._id) {
+        video = videos[i];
+      }
+    }
+    console.log(video);
+    if (video) {
+      for (let i = 0; i < video.subscribers.length; i++) {
+        if (
+          video.subscribers[i].userID == state.userId
+          //&&video.subscribers[i].vote_type == "downs"
+        )
+          return;
+      }
+    }
+
     fetch("http://localhost:7777/video-request/vote", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: vidInfo._id, vote_type: "downs" }),
+      body: JSON.stringify({
+        id: vidInfo._id,
+        vote_type: "downs",
+        userID: state.userId,
+      }),
     })
       .then((blob) => blob.json())
       .then((data) => {
