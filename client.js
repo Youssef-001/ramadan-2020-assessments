@@ -1,6 +1,10 @@
 const listOfVidsElem = document.getElementById("listOfRequests");
-let sortBy = "newFirst";
-let searchTerm = "";
+
+const state = {
+  sortBy: "newFirst",
+  searchTerm: "",
+  userId: "",
+};
 
 function renderSingleVid(vidInfo, isPrepend = false) {
   const vidReqContainer = document.createElement("div");
@@ -93,18 +97,8 @@ function debounce(fn, wait) {
 }
 
 function checkValidity(formData) {
-  const name = formData.get("author_name");
-  const email = formData.get("author_email");
   const topic = formData.get("topic_title");
   const topicDetails = formData.get("topic_details");
-
-  if (!name) {
-    document.querySelector("[name=author_name]").classList.add("is-invalid");
-  }
-  const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!email || !emailPattern.test(email)) {
-    document.querySelector("[name=author_email]").classList.add("is-invalid");
-  }
 
   if (!topic || topic.length > 30) {
     document.querySelector("[name=topic_title]").classList.add("is-invalid");
@@ -137,17 +131,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const searchBox = document.getElementById("search_box");
 
+  const formLoginElm = document.querySelector(".form-login");
+  const appContentElm = document.querySelector(".app-content");
+
+  if (window.location.search) {
+    state.userId = new URLSearchParams(window.location.search).get("id");
+    console.log(state.userId);
+    formLoginElm.classList.add("d-none");
+    appContentElm.classList.remove("d-none");
+  }
+
   loadAllVidReqs();
 
   sortByElems.forEach((elem) => {
     elem.addEventListener("click", function (e) {
       e.preventDefault();
 
-      sortBy = this.querySelector("input").value;
-      loadAllVidReqs(sortBy, searchTerm);
+      state.sortBy = this.querySelector("input").value;
+      loadAllVidReqs(state.sortBy, state.searchTerm);
 
       this.classList.add("active");
-      if (sortBy == "topVotedFirst") {
+      if (state.sortBy == "topVotedFirst") {
         document.getElementById("sort_by_new").classList.remove("active");
       } else document.getElementById("sort_by_top").classList.remove("active");
     });
@@ -156,8 +160,8 @@ document.addEventListener("DOMContentLoaded", function () {
   searchBox.addEventListener(
     "input",
     debounce((e) => {
-      searchTerm = e.target.value;
-      loadAllVidReqs(sortBy, searchTerm);
+      state.searchTerm = e.target.value;
+      loadAllVidReqs(state.sortBy, state.searchTerm);
     }, 250)
   );
 
@@ -166,6 +170,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const formData = new FormData(formVidReq);
     const isValid = checkValidity(formData);
+
+    formData.append("author_id", state.userId);
 
     if (!isValid) return;
 
