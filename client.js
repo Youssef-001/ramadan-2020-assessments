@@ -63,8 +63,8 @@ function renderSingleVid(vidInfo, isPrepend = false) {
     if (video) {
       for (let i = 0; i < video.subscribers.length; i++) {
         if (
-          video.subscribers[i].userID == state.userId
-          //&&video.subscribers[i].vote_type == "ups"
+          video.subscribers[i].userID == state.userId &&
+          video.subscribers[i].count == 1
         )
           return;
       }
@@ -74,7 +74,7 @@ function renderSingleVid(vidInfo, isPrepend = false) {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        id: vidInfo._id,
+        id: video._id,
         vote_type: "ups",
         userID: state.userId,
       }),
@@ -99,18 +99,17 @@ function renderSingleVid(vidInfo, isPrepend = false) {
     if (video) {
       for (let i = 0; i < video.subscribers.length; i++) {
         if (
-          video.subscribers[i].userID == state.userId
-          //&&video.subscribers[i].vote_type == "downs"
+          video.subscribers[i].userID == state.userId &&
+          video.subscribers[i].count == -1
         )
           return;
       }
     }
-
     fetch("http://localhost:7777/video-request/vote", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        id: vidInfo._id,
+        id: video._id,
         vote_type: "downs",
         userID: state.userId,
       }),

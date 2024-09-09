@@ -62,6 +62,7 @@ app.put("/video-request/vote", async (req, res, next) => {
   const { id, vote_type, userID } = req.body;
 
   VideoRequestData.addSubscriber(userID, id, vote_type);
+  //
 
   const response = await VideoRequestData.updateVoteForRequest(id, vote_type);
   res.send(response);

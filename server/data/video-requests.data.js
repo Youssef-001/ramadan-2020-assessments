@@ -38,27 +38,40 @@ module.exports = {
       console.log("here", userID);
       console.log(video.subscribers);
 
-      for (let i = 0; i < video.subscribers.length; i++) {
-        if (
-          video.subscribers[i].userID == userID &&
-          video.subscribers[i].vote_type == vote_type
-        )
-          return;
-      }
+      let updated = false;
 
-      let flag = true;
+      console.log(vote_type);
 
+      debugger;
       for (let i = 0; i < video.subscribers.length; i++) {
         if (video.subscribers[i].userID == userID) {
-          flag = false;
-          break;
+          // if (vote_type == "ups" && video.subscribers[i].count >= 1) return;
+          // else if (vote_type == "downs" && video.subscribers[i].count <= -1)
+          //   return;
+
+          if (vote_type === "ups" && video.subscribers[i].count < 1) {
+            video.subscribers[i].count = 1; // Upvote
+          } else if (vote_type === "downs" && video.subscribers[i].count > -1) {
+            video.subscribers[i].count = -1; // Downvote
+          }
+
+          updated = true;
+          break; // Exit loop after updating
         }
       }
 
-      if (flag) video.subscribers.push({ userID, vote_type });
+      // If the user was not found in the subscribers list
+      if (!updated) {
+        if (vote_type == "ups") video.subscribers.push({ userID, count: 1 });
+        else video.subscribers.push({ userID, count: -1 });
+      }
 
-      // Save the updated video request
+      console.log("before", await VideoRequest.findById(id));
+      // Save the updated video request after modifications
+      console.log(video);
+      video.markModified("subscribers");
       await video.save();
+      console.log("after", await VideoRequest.findById(id));
 
       return video; // Return the updated video request
     } catch (error) {
@@ -66,7 +79,6 @@ module.exports = {
       throw error;
     }
   },
-
   getRequestById: (id) => {
     return VideoRequest.findById({ _id: id });
   },
