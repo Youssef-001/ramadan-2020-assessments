@@ -60,8 +60,10 @@ function renderSingleVid(vidInfo, isPrepend = false) {
       }
     }
     console.log(video);
+    let exist = false;
     if (video) {
       for (let i = 0; i < video.subscribers.length; i++) {
+        if (video.subscribers[i].userID == state.userId) exist = true;
         if (
           video.subscribers[i].userID == state.userId &&
           video.subscribers[i].count == 1
@@ -70,6 +72,8 @@ function renderSingleVid(vidInfo, isPrepend = false) {
       }
     }
 
+    console.log("exist: ", exist);
+
     fetch("http://localhost:7777/video-request/vote", {
       method: "PUT",
       headers: { "content-type": "application/json" },
@@ -77,6 +81,7 @@ function renderSingleVid(vidInfo, isPrepend = false) {
         id: video._id,
         vote_type: "ups",
         userID: state.userId,
+        updateVote: exist == true ? true : false,
       }),
     })
       .then((blob) => blob.json())
@@ -95,9 +100,11 @@ function renderSingleVid(vidInfo, isPrepend = false) {
         video = videos[i];
       }
     }
+    let exist = false;
     console.log(video);
     if (video) {
       for (let i = 0; i < video.subscribers.length; i++) {
+        if (video.subscribers[i].userID == state.userId) exist = true;
         if (
           video.subscribers[i].userID == state.userId &&
           video.subscribers[i].count == -1
@@ -105,6 +112,9 @@ function renderSingleVid(vidInfo, isPrepend = false) {
           return;
       }
     }
+
+    console.log("exist: ", exist);
+
     fetch("http://localhost:7777/video-request/vote", {
       method: "PUT",
       headers: { "content-type": "application/json" },
@@ -112,6 +122,7 @@ function renderSingleVid(vidInfo, isPrepend = false) {
         id: video._id,
         vote_type: "downs",
         userID: state.userId,
+        updateVote: exist == true ? true : false,
       }),
     })
       .then((blob) => blob.json())

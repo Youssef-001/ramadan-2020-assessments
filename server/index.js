@@ -59,12 +59,17 @@ app.post("/users/login", async (req, res, next) => {
 app.use(express.json());
 
 app.put("/video-request/vote", async (req, res, next) => {
-  const { id, vote_type, userID } = req.body;
+  const { id, vote_type, userID, updateVote } = req.body;
 
-  VideoRequestData.addSubscriber(userID, id, vote_type);
-  //
+  if (!updateVote) VideoRequestData.addSubscriber(userID, id, vote_type);
+  let response = "";
 
-  const response = await VideoRequestData.updateVoteForRequest(id, vote_type);
+  if (updateVote) {
+    response = await VideoRequestData.modifyVote(id, userID, vote_type);
+  } else response = await VideoRequestData.updateVoteForRequest(id, vote_type);
+
+  console.log(updateVote, response.subscribers);
+
   res.send(response);
   next();
 });
