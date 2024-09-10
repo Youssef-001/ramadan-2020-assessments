@@ -27,11 +27,12 @@ app.post("/video-request", upload.none(), async (req, res, next) => {
 });
 
 app.get("/video-request", async (req, res, next) => {
-  const { sortBy, searchTerm } = req.query;
+  const { sortBy, searchTerm, filterBy } = req.query;
   let data;
   if (searchTerm) {
-    data = await VideoRequestData.searchRequests(searchTerm);
-  } else data = await VideoRequestData.getAllVideoRequests();
+    data = await VideoRequestData.searchRequests(searchTerm, filterBy);
+  } else data = await VideoRequestData.getAllVideoRequests(filterBy);
+
   if (sortBy == "topVotedFirst") {
     data = data.sort((prev, next) => {
       if (
@@ -42,7 +43,6 @@ app.get("/video-request", async (req, res, next) => {
       else return 1;
     });
   }
-  console.log(data);
   res.send(data);
   next();
 });

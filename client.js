@@ -6,6 +6,7 @@ const state = {
   searchTerm: "",
   userId: "",
   is_super_user: false,
+  filterBy: "all",
 };
 
 function renderSingleVid(vidInfo, isPrepend = false) {
@@ -253,9 +254,14 @@ function applyVoteStyle(video_id, votes_list, is_disabled, vote_type) {
   }
 }
 
-function loadAllVidReqs(sortBy = "newFirst", searchTerm = "") {
+function loadAllVidReqs(
+  sortBy = "newFirst",
+  searchTerm = "",
+  filterBy = "all"
+) {
+  console.log(sortBy, searchTerm, filterBy);
   fetch(
-    `http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}`
+    `http://localhost:7777/video-request?sortBy=${sortBy}&searchTerm=${searchTerm}&filterBy=${filterBy}`
   )
     .then((blob) => blob.json())
     .then((data) => {
@@ -307,6 +313,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const sortByElems = document.querySelectorAll("[id*=sort_by_]");
 
+  let filterButtons = document.querySelectorAll(`[id^=filter_by_]`);
+
   const searchBox = document.getElementById("search_box");
 
   const formLoginElm = document.querySelector(".form-login");
@@ -324,13 +332,22 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   loadAllVidReqs();
+  filterButtons.forEach((button) => {
+    button.addEventListener("click", function (e) {
+      e.preventDefault();
+      state.filterBy = e.target.getAttribute("id").split("_")[2];
+      filterButtons.forEach((option) => option.classList.remove("active"));
+      e.target.classList.add("active");
+      loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
+    });
+  });
 
   sortByElems.forEach((elem) => {
     elem.addEventListener("click", function (e) {
       e.preventDefault();
 
       state.sortBy = this.querySelector("input").value;
-      loadAllVidReqs(state.sortBy, state.searchTerm);
+      loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
 
       this.classList.add("active");
       if (state.sortBy == "topVotedFirst") {
@@ -343,7 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
     "input",
     debounce((e) => {
       state.searchTerm = e.target.value;
-      loadAllVidReqs(state.sortBy, state.searchTerm);
+      loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
     }, 250)
   );
 
@@ -367,3 +384,39 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   });
 });
+
+// document.getElementById("filter_by_all").addEventListener("click", (e) => {
+//   console.log(document.querySelector(`[id$='${state.filterBy}']`));
+//   document.querySelector(`[id$='${state.filterBy}']`).style.opacity = 1;
+//   e.preventDefault();
+//   state.filterBy = "all";
+//   loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
+//   filterButtons.allButton.style.opacity = "0.5";
+// });
+
+// document.getElementById("filter_by_new").addEventListener("click", (e) => {
+//   document.querySelector(`[id$='${state.filterBy}']`).style.opacity = 1;
+
+//   e.preventDefault();
+//   state.filterBy = "new";
+//   loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
+//   filterButtons.newButton.style.opacity = "0.5";
+// });
+
+// document.getElementById("filter_by_planned").addEventListener("click", (e) => {
+//   document.querySelector(`[id$='${state.filterBy}']`).style.opacity = 1;
+
+//   e.preventDefault();
+//   state.filterBy = "planned";
+//   loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
+//   filterButtons.plannedButton.style.opacity = "0.5";
+// });
+
+// document.getElementById("filter_by_done").addEventListener("click", (e) => {
+//   document.querySelector(`[id$='${state.filterBy}']`).style.opacity = 1;
+
+//   e.preventDefault();
+//   state.filterBy = "done";
+//   loadAllVidReqs(state.sortBy, state.searchTerm, state.filterBy);
+//   filterButtons.doneButton.style.opacity = "0.5";
+// });
