@@ -50,6 +50,17 @@ function renderSingleVid(vidInfo, isPrepend = false) {
                 }
               </p>
             </div>
+
+            ${
+              vidInfo.status === "done"
+                ? ` <div class="ml-auto mr-3">
+                  <iframe width="240" height="135"
+                      src="https://www.youtube.com/embed/${vidInfo.video_ref.link}"
+                      frameborder="0" allowfullscreen></iframe>
+              </div>`
+                : ""
+            }
+
             <div class="d-flex flex-column text-center">
               <a class="btn btn-link" id="votes_ups_${vidInfo._id}"  >🔺</a>
               <h3 id="score_vote_${vidInfo._id}">${
@@ -59,10 +70,22 @@ function renderSingleVid(vidInfo, isPrepend = false) {
             </div>
           </div>
           <div class="card-footer d-flex flex-row justify-content-between">
-            <div>
-              <span class="text-info">NEW</span>
+            <div class="${
+              vidInfo.status === "done"
+                ? "text-success"
+                : vidInfo.status === "planned"
+                ? "text-primary"
+                : ""
+            }">
+              <span  >${vidInfo.status.toUpperCase()} ${
+    vidInfo.status === "done"
+      ? `on ${new Date(vidInfo.video_ref.date).toLocaleDateString()}`
+      : ""
+  }</span>
               &bullet; added by <strong>${vidInfo.author_name}</strong> on
-              <strong>${new Date(vidInfo.submit_date).toString()}</strong>
+              <strong>${new Date(
+                vidInfo.submit_date
+              ).toLocaleDateString()}</strong>
             </div>
             <div
               class="d-flex justify-content-center flex-column 408ml-auto mr-2"
@@ -138,7 +161,10 @@ function renderSingleVid(vidInfo, isPrepend = false) {
         .then((data) => window.location.reload());
     });
   }
-  applyVoteStyle(vidInfo._id, vidInfo["votes"]);
+  if (state.is_super_user) {
+    applyVoteStyle(vidInfo._id, vidInfo["votes"], true);
+  } else
+    applyVoteStyle(vidInfo._id, vidInfo["votes"], vidInfo.status === "done");
 
   const voteUpElem = document.getElementById(`votes_ups_${vidInfo._id}`);
   const voteDownElem = document.getElementById(`votes_downs_${vidInfo._id}`);
@@ -163,7 +189,7 @@ function renderSingleVid(vidInfo, isPrepend = false) {
   }
 
   votesElems.forEach((elem) => {
-    if (state.is_super_user) {
+    if (state.is_super_user || vidInfo.status == "done") {
       return;
     }
     elem.addEventListener("click", function (e) {
@@ -184,17 +210,22 @@ function renderSingleVid(vidInfo, isPrepend = false) {
           scoreVoteElem.innerText =
             data.votes.ups.length - data.votes.downs.length;
 
-          applyVoteStyle(id, data["votes"], vote_type);
+          applyVoteStyle(
+            id,
+            data["votes"],
+            vidInfo.status === "done",
+            vote_type
+          );
         });
     });
   });
 }
 
-function applyVoteStyle(video_id, votes_list, vote_type) {
+function applyVoteStyle(video_id, votes_list, is_disabled, vote_type) {
   const voteUpElem = document.getElementById(`votes_ups_${video_id}`);
   const voteDownElem = document.getElementById(`votes_downs_${video_id}`);
 
-  if (state.is_super_user) {
+  if (is_disabled) {
     voteUpElem.style.opacity = "0.5";
     voteDownElem.style.opacity = "0.5";
     voteDownElem.style.cursor = "not-allowed";
