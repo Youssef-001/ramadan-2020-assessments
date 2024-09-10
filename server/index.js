@@ -32,14 +32,17 @@ app.get("/video-request", async (req, res, next) => {
   if (searchTerm) {
     data = await VideoRequestData.searchRequests(searchTerm);
   } else data = await VideoRequestData.getAllVideoRequests();
-
   if (sortBy == "topVotedFirst") {
     data = data.sort((prev, next) => {
-      if (prev.votes.ups - prev.votes.downs > next.votes.ups - next.votes.downs)
+      if (
+        prev.votes.ups.length - prev.votes.downs.length >
+        next.votes.ups.length - next.votes.downs.length
+      )
         return -1;
       else return 1;
     });
   }
+  console.log(data);
   res.send(data);
   next();
 });
@@ -59,12 +62,13 @@ app.post("/users/login", async (req, res, next) => {
 app.use(express.json());
 
 app.put("/video-request/vote", async (req, res, next) => {
-  const { id, vote_type, userID } = req.body;
+  const { id, vote_type, user_id } = req.body;
 
-  VideoRequestData.addSubscriber(userID, id, vote_type);
-  //
-
-  const response = await VideoRequestData.updateVoteForRequest(id, vote_type);
+  const response = await VideoRequestData.updateVoteForRequest(
+    id,
+    vote_type,
+    user_id
+  );
   res.send(response);
   next();
 });

@@ -1,16 +1,7 @@
 var VideoRequest = require("./../models/video-requests.model");
-const User = require("./../models/user.model");
+
 module.exports = {
-  createRequest: async (vidRequestData) => {
-    console.log(vidRequestData);
-    const authorId = vidRequestData.author_id;
-
-    if (authorId) {
-      const userObj = await User.findOne({ _id: authorId });
-      vidRequestData.author_name = userObj.author_name;
-      vidRequestData.author_email = userObj.author_email;
-    }
-
+  createRequest: (vidRequestData) => {
     let newRequest = new VideoRequest(vidRequestData);
     return newRequest.save();
   },
@@ -20,65 +11,9 @@ module.exports = {
   },
 
   searchRequests: (topic) => {
-    return VideoRequest.find({
-      topic_title: { $regex: topic, $options: "i" },
-    }).sort({ addedAt: "-1" });
+    return VideoRequest.find({ topic_title: topic }).sort({ addedAt: "-1" });
   },
 
-  addSubscriber: async (userID, id, vote_type) => {
-    try {
-      // Find the video request by id
-      let video = await VideoRequest.findById(id);
-      console.log(video);
-
-      if (!video) {
-        throw new Error("Video request not found");
-      }
-
-      console.log("here", userID);
-      console.log(video.subscribers);
-
-      let updated = false;
-
-      console.log(vote_type);
-
-      debugger;
-      for (let i = 0; i < video.subscribers.length; i++) {
-        if (video.subscribers[i].userID == userID) {
-          // if (vote_type == "ups" && video.subscribers[i].count >= 1) return;
-          // else if (vote_type == "downs" && video.subscribers[i].count <= -1)
-          //   return;
-
-          if (vote_type === "ups" && video.subscribers[i].count < 1) {
-            video.subscribers[i].count = 1; // Upvote
-          } else if (vote_type === "downs" && video.subscribers[i].count > -1) {
-            video.subscribers[i].count = -1; // Downvote
-          }
-
-          updated = true;
-          break; // Exit loop after updating
-        }
-      }
-
-      // If the user was not found in the subscribers list
-      if (!updated) {
-        if (vote_type == "ups") video.subscribers.push({ userID, count: 1 });
-        else video.subscribers.push({ userID, count: -1 });
-      }
-
-      console.log("before", await VideoRequest.findById(id));
-      // Save the updated video request after modifications
-      console.log(video);
-      video.markModified("subscribers");
-      await video.save();
-      console.log("after", await VideoRequest.findById(id));
-
-      return video; // Return the updated video request
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  },
   getRequestById: (id) => {
     return VideoRequest.findById({ _id: id });
   },
@@ -95,15 +30,27 @@ module.exports = {
     return VideoRequest.findByIdAndUpdate(id, updates, { new: true });
   },
 
-  updateVoteForRequest: async (id, vote_type) => {
+  updateVoteForRequest: async (id, vote_type, user_id) => {
     const oldRequest = await VideoRequest.findById({ _id: id });
     const other_type = vote_type === "ups" ? "downs" : "ups";
+
+    const oldVoteList = oldRequest.votes[vote_type];
+    const oldOtherList = oldRequest.votes[other_type];
+
+    if (!oldVoteList.includes(user_id)) {
+      oldVoteList.push(user_id);
+    } else {
+      oldVoteList.splice(user_id);
+    }
+
+    if (oldOtherList.includes(user_id)) oldOtherList.splice(user_id);
+
     return VideoRequest.findByIdAndUpdate(
       { _id: id },
       {
         votes: {
-          [vote_type]: ++oldRequest.votes[vote_type],
-          [other_type]: oldRequest.votes[other_type],
+          [vote_type]: oldVoteList,
+          [other_type]: oldOtherList,
         },
       },
       { new: true }

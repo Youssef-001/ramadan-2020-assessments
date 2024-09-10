@@ -23,7 +23,7 @@ function renderSingleVid(vidInfo, isPrepend = false) {
             <div class="d-flex flex-column text-center">
               <a class="btn btn-link" id="votes_ups_${vidInfo._id}"  >🔺</a>
               <h3 id="score_vote_${vidInfo._id}">${
-    vidInfo.votes["ups"] - vidInfo.votes["downs"]
+    vidInfo.votes.ups.length - vidInfo.votes.downs.length
   }</h3>
               <a class="btn btn-link " id="votes_downs_${vidInfo._id}">🔻</a>
             </div>
@@ -45,81 +45,62 @@ function renderSingleVid(vidInfo, isPrepend = false) {
   if (isPrepend) listOfVidsElem.prepend(vidReqContainer);
   else listOfVidsElem.appendChild(vidReqContainer);
 
+  applyVoteStyle(vidInfo._id, vidInfo["votes"]);
+
   const voteUpElem = document.getElementById(`votes_ups_${vidInfo._id}`);
   const voteDownElem = document.getElementById(`votes_downs_${vidInfo._id}`);
   const scoreVoteElem = document.getElementById(`score_vote_${vidInfo._id}`);
 
-  voteUpElem.addEventListener("click", async (e) => {
-    let jsonData = await fetch("http://localhost:7777/video-request");
-    let videos = await jsonData.json();
-    let video;
+  const votesElems = document.querySelectorAll(
+    `[id^=votes_][id$=_${vidInfo._id}]`
+  );
 
-    for (let i = 0; i < videos.length; i++) {
-      if (e.target.id.split("_")[2] == videos[i]._id) {
-        video = videos[i];
-      }
-    }
-    console.log(video);
-    if (video) {
-      for (let i = 0; i < video.subscribers.length; i++) {
-        if (
-          video.subscribers[i].userID == state.userId &&
-          video.subscribers[i].count == 1
-        )
-          return;
-      }
-    }
+  votesElems.forEach((elem) => {
+    elem.addEventListener("click", function (e) {
+      e.preventDefault();
 
-    fetch("http://localhost:7777/video-request/vote", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        id: video._id,
-        vote_type: "ups",
-        userID: state.userId,
-      }),
-    })
-      .then((blob) => blob.json())
-      .then((data) => {
-        scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
-      });
+      let [, vote_type, id] = e.target.id.split("_");
+      fetch("http://localhost:7777/video-request/vote", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          id,
+          vote_type,
+          user_id: state.userId,
+        }),
+      })
+        .then((blob) => blob.json())
+        .then((data) => {
+          scoreVoteElem.innerText =
+            data.votes.ups.length - data.votes.downs.length;
+
+          applyVoteStyle(id, data["votes"], vote_type);
+        });
+    });
   });
+}
 
-  voteDownElem.addEventListener("click", async (e) => {
-    let jsonData = await fetch("http://localhost:7777/video-request");
-    let videos = await jsonData.json();
-    let video;
+function applyVoteStyle(video_id, votes_list, vote_type) {
+  if (!vote_type) {
+    if (votes_list.ups.includes(state.userId)) vote_type = "ups";
+    else if (votes_list.downs.includes(state.userId)) vote_type = "downs";
+    else {
+      return;
+    }
+  }
+  const voteUpElem = document.getElementById(`votes_ups_${video_id}`);
+  const voteDownElem = document.getElementById(`votes_downs_${video_id}`);
+  const voteDirectionElem = vote_type == "ups" ? voteUpElem : voteDownElem;
 
-    for (let i = 0; i < videos.length; i++) {
-      if (e.target.id.split("_")[2] == videos[i]._id) {
-        video = videos[i];
-      }
-    }
-    console.log(video);
-    if (video) {
-      for (let i = 0; i < video.subscribers.length; i++) {
-        if (
-          video.subscribers[i].userID == state.userId &&
-          video.subscribers[i].count == -1
-        )
-          return;
-      }
-    }
-    fetch("http://localhost:7777/video-request/vote", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        id: video._id,
-        vote_type: "downs",
-        userID: state.userId,
-      }),
-    })
-      .then((blob) => blob.json())
-      .then((data) => {
-        console.log(data);
-        scoreVoteElem.innerText = data.votes.ups - data.votes.downs;
-      });
-  });
+  const voteOtherElem = vote_type == "ups" ? voteDownElem : voteUpElem;
+
+  if (votes_list[vote_type].includes(state.userId)) {
+    console.log("test");
+    voteDirectionElem.style.opacity = 1;
+    voteOtherElem.style.opacity = "0.5";
+  } else {
+    voteOtherElem.style.opacity = 1;
+  }
 }
 
 function loadAllVidReqs(sortBy = "newFirst", searchTerm = "") {
